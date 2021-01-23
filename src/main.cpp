@@ -16,13 +16,13 @@
 #include "esp_camera.h"
 #include <HTTPClient.h>
 
-const char *ssid = "Keivan";
+const char *ssid = "Keivan&Mina";
 const char *password = "K@0e#5I%8v^3A*7n?";
 
 String serverName = "burglaralarm.persianprogrammer.com"; // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
 //String serverName = "example.com";   // OR REPLACE WITH YOUR DOMAIN NAME
 
-String serverPath = "/Privacy"; // The default serverPath should be upload.php
+String serverPath = "/ManageNotification/UploadImage"; // The default serverPath should be upload.php
 
 const int serverPort = 80;
 
@@ -76,9 +76,10 @@ String sendPhoto()
     uint32_t extraLen = head.length() + tail.length();
     uint32_t totalLen = imageLen + extraLen;
 
-    client.println("POST /Privacy HTTP/1.1");
+    client.println("POST /ManageNotification/UploadImage HTTP/1.1");
     client.println("Host: " + serverName + ":5000");
     client.println("Content-Length: " + String(totalLen));
+    client.println("keivan: mina");
     client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
     client.println();
     client.print(head);
