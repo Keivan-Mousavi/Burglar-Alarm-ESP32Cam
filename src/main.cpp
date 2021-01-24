@@ -79,7 +79,7 @@ String sendPhoto()
     client.println("POST /ManageNotification/UploadImage HTTP/1.1");
     client.println("Host: " + serverName + ":5000");
     client.println("Content-Length: " + String(totalLen));
-    client.println("keivan: mina");
+    client.println("Serial: d6ac5b88-35e9-461f-b911-2f68d4cb9c44");
     client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
     client.println();
     client.print(head);
