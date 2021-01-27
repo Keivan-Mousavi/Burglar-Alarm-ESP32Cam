@@ -16,13 +16,12 @@
 #include "esp_camera.h"
 #include <HTTPClient.h>
 
-const char *ssid = "Keivan&Mina";
-const char *password = "K@0e#5I%8v^3A*7n?";
+const char *ssid = "***";
+const char *password = "***";
 
-String serverName = "burglaralarm.persianprogrammer.com"; // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
-//String serverName = "example.com";   // OR REPLACE WITH YOUR DOMAIN NAME
+String serverName = "burglaralarm.persianprogrammer.com";
 
-String serverPath = "/ManageNotification/UploadImage"; // The default serverPath should be upload.php
+String serverPath = "/ManageNotification/UploadImage";
 
 const int serverPort = 80;
 
@@ -190,17 +189,16 @@ void setup()
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
 
-  // init with high specs to pre-allocate larger buffers
   if (psramFound())
   {
     config.frame_size = FRAMESIZE_SXGA;
-    config.jpeg_quality = 10; //0-63 lower number means higher quality
+    config.jpeg_quality = 10;
     config.fb_count = 2;
   }
   else
   {
     config.frame_size = FRAMESIZE_SXGA;
-    config.jpeg_quality = 10; //0-63 lower number means higher quality
+    config.jpeg_quality = 10;
     config.fb_count = 1;
   }
 
