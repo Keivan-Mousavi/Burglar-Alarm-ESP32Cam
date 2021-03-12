@@ -76,7 +76,7 @@ String sendPhoto()
     uint32_t totalLen = imageLen + extraLen;
 
     client.println("POST /ManageNotification/UploadImage HTTP/1.1");
-    client.println("Host: " + serverName + ":5000");
+    client.println("Host: " + serverName + ":80");
     client.println("Content-Length: " + String(totalLen));
     client.println("Serial: d6ac5b88-35e9-461f-b911-2f68d4cb9c44");
     client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
@@ -214,14 +214,33 @@ void setup()
   sendPhoto();
 }
 
+bool CheckUploadImage()
+{
+  HTTPClient http;
+
+  String url = "http://192.168.1.5:5000/ManageNotification/CheckUploadImage?serial=d6ac5b88-35e9-461f-b911-2f68d4cb9c44";
+
+  http.begin(url);
+
+  int httpCode = http.GET();
+
+  if (httpCode > 0)
+  {
+    return (bool)http.getString();
+  }
+}
+
 void loop()
 {
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= timerInterval)
   {
-    sendPhoto();
+    if (CheckUploadImage())
+    {
+      sendPhoto();
+    }
     previousMillis = currentMillis;
   }
 
-  delay(100);
+  delay(1000);
 }
