@@ -218,7 +218,7 @@ bool CheckUploadImage()
 {
   HTTPClient http;
 
-  String url = "http://192.168.1.5:5000/ManageNotification/CheckUploadImage?serial=d6ac5b88-35e9-461f-b911-2f68d4cb9c44";
+  String url = "http://burglaralarm.persianprogrammer.com/ManageNotification/CheckUploadImage?serial=d6ac5b88-35e9-461f-b911-2f68d4cb9c44";
 
   http.begin(url);
 
@@ -232,14 +232,8 @@ bool CheckUploadImage()
 
 void loop()
 {
-  // unsigned long currentMillis = millis();
-  // if (currentMillis - previousMillis >= timerInterval)
-  // {
-  //   if (CheckUploadImage())
-  //   {
+    if (CheckUploadImage())
+    {
       sendPhoto();
-      //delay(500);
-  //   }
-  //   previousMillis = currentMillis;
-  // }
+    }
 }
