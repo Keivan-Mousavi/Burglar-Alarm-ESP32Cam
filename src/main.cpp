@@ -16,8 +16,8 @@
 #include "esp_camera.h"
 #include <HTTPClient.h>
 
-const char *ssid = "***";
-const char *password = "***";
+const char *ssid = "Keivan&Mina";
+const char *password = "K@0e#5I%8v^3A*7n?";
 
 String serverName = "burglaralarm.persianprogrammer.com";
 
@@ -46,7 +46,7 @@ WiFiClient client;
 #define HREF_GPIO_NUM 23
 #define PCLK_GPIO_NUM 22
 
-const int timerInterval = 1000;   // time between each HTTP POST image
+const int timerInterval = 500;   // time between each HTTP POST image
 unsigned long previousMillis = 0; // last time image was sent
 
 String sendPhoto()
@@ -232,15 +232,14 @@ bool CheckUploadImage()
 
 void loop()
 {
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= timerInterval)
-  {
-    if (CheckUploadImage())
-    {
+  // unsigned long currentMillis = millis();
+  // if (currentMillis - previousMillis >= timerInterval)
+  // {
+  //   if (CheckUploadImage())
+  //   {
       sendPhoto();
-    }
-    previousMillis = currentMillis;
-  }
-
-  delay(1000);
+      //delay(500);
+  //   }
+  //   previousMillis = currentMillis;
+  // }
 }
