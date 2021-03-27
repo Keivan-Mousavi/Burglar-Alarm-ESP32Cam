@@ -16,8 +16,8 @@
 #include "esp_camera.h"
 #include <HTTPClient.h>
 
-const char *ssid = "Keivan&Mina";
-const char *password = "K@0e#5I%8v^3A*7n?";
+const char *ssid = "***";
+const char *password = "***";
 
 String serverName = "burglaralarm.persianprogrammer.com";
 
