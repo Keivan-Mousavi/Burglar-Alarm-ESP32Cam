@@ -1,4 +1,4 @@
-# Burglar-Alarm-ESP32Cam
+# Burglar Alarm ESP32Cam
 
 In this type of design, an attempt has been made to don't use IP static to transfer information 
 
