@@ -60,7 +60,9 @@ The purpose of eliminating static IP is to lower the cost to the user and also t
 </code>
 </pre>
 
-Add this library
+<p>
+<b>Add this librarys</b>
+  </p>
 <pre>
 <code>
   HTTPClient
