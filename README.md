@@ -59,3 +59,13 @@ The purpose of eliminating static IP is to lower the cost to the user and also t
   board_build.partitions = huge_app.csv
 </code>
 </pre>
+
+Add this library
+<pre>
+<code>
+  HTTPClient
+  WiFiClientSecure
+  WiFi
+  ArduinoJson
+</code>
+</pre>
