@@ -12,6 +12,7 @@ The purpose of eliminating static IP is to lower the cost to the user and also t
 <li>ESP32-CAM</li>
 <li>USB to serial FT232RL-FTDI</li>
 </ul>
+
 ![ESP32-CAM-Pic](https://user-images.githubusercontent.com/22281772/112893911-800fc500-90f0-11eb-8063-d7b0d0c151b3.png)
 
 
