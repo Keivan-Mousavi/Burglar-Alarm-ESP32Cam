@@ -4,10 +4,23 @@
 In this type of design, an attempt has been made to don't use IP static to transfer information. 
 </p>
 <p>
-The purpose of eliminating static IP is to lower the cost to the user and also to have a machine learning on the server side to continue the project.
+The purpose of eliminating static IP is to lower the cost to the user and also to have a machine learning on the server side to continue the project. 
+<br />
 The manufacturer of this device can also earn money through the sale of the Internet and other services.
 </p>
 
+<p>
+The next phase of the project is on movement and face recognition.
+</p>
+
+<p>
+  * It should be noted that the above module is only for demos and for large projects need a more powerful module in terms of camera power and sending images online.
+ </p> 
+ 
+ <p>
+ The way this device works is that by using this module, it receives a warning information from the server and then the camera turns on and starts sending photos frame by frame to the server.
+ </p>
+ 
 <p>I use <a href="https://code.visualstudio.com/">VS Code</a> and <a href="https://platformio.org/">PlatformIO</a> for develop.</p>
 <p>PlatformIO was a sweet experience to develop microcontrollers</p>
 
