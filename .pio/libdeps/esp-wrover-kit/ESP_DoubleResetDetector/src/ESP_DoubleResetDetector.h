@@ -1,24 +1,28 @@
 /****************************************************************************************************************************
-   ESP_DoubleResetDetector.h
-   For ESP8266 / ESP32 boards
+  ESP_DoubleResetDetector.h
+  For ESP8266 / ESP32 boards
 
-   ESP_DoubleResetDetector is a library for the ESP8266/Arduino platform
-   to enable trigger configure mode by resetting ESP32 / ESP8266 twice.
+  ESP_DoubleResetDetector is a library for the ESP8266/Arduino platform
+  to enable trigger configure mode by resetting ESP32 / ESP8266 twice.
 
-   Forked from DataCute https://github.com/datacute/DoubleResetDetector
+  Forked from DataCute https://github.com/datacute/DoubleResetDetector
 
-   Built by Khoi Hoang https://github.com/khoih-prog/ESP_DoubleResetDetector
-   Licensed under MIT license
-   Version: 1.1.1
+  Built by Khoi Hoang https://github.com/khoih-prog/ESP_DoubleResetDetector
+  Licensed under MIT license
+  Version: 1.3.0
 
-   Version Modified By   Date      Comments
-   ------- -----------  ---------- -----------
-    1.0.0   K Hoang      15/12/2019 Initial coding
-    1.0.1   K Hoang      30/12/2019 Now can use EEPROM or SPIFFS for both ESP8266 and ESP32. RTC still OK for ESP8266
-    1.0.2   K Hoang      10/04/2020 Fix bug by left-over cpp file and in example.
-    1.0.3   K Hoang      13/05/2020 Update to use LittleFS for ESP8266 core 2.7.1+
-    1.1.0   K Hoang      04/12/2020 Add support to LittleFS for ESP32 using LITTLEFS Library
-    1.1.1   K Hoang      28/12/2020 Suppress all possible compiler warnings
+  Version Modified By   Date      Comments
+  ------- -----------  ---------- -----------
+  1.0.0   K Hoang      15/12/2019 Initial coding
+  1.0.1   K Hoang      30/12/2019 Now can use EEPROM or SPIFFS for both ESP8266 and ESP32. RTC still OK for ESP8266
+  1.0.2   K Hoang      10/04/2020 Fix bug by left-over cpp file and in example.
+  1.0.3   K Hoang      13/05/2020 Update to use LittleFS for ESP8266 core 2.7.1+
+  1.1.0   K Hoang      04/12/2020 Add support to LittleFS for ESP32 using LITTLEFS Library
+  1.1.1   K Hoang      28/12/2020 Suppress all possible compiler warnings
+  1.1.2   K Hoang      10/10/2021 Update `platform.ini` and `library.json`
+  1.2.0   K Hoang      26/11/2021 Auto detect ESP32 core and use either built-in LittleFS or LITTLEFS library
+  1.2.1   K Hoang      26/11/2021 Fix compile error for ESP32 core v1.0.5-
+  1.3.0   K Hoang      10/02/2022 Add support to new ESP32-S3 
 *****************************************************************************************************************************/
 
 #pragma once
@@ -32,7 +36,16 @@
   #include <WProgram.h>
 #endif
 
-#define ESP_DOUBLE_RESET_DETECTOR_VERSION       "ESP_DoubleResetDetector v1.1.1"
+#ifndef ESP_DOUBLE_RESET_DETECTOR_VERSION
+  #define ESP_DOUBLE_RESET_DETECTOR_VERSION             "ESP_DoubleResetDetector v1.3.0"
+  
+  #define ESP_DOUBLE_RESET_DETECTOR_VERSION_MAJOR       1
+  #define ESP_DOUBLE_RESET_DETECTOR_VERSION_MINOR       3
+  #define ESP_DOUBLE_RESET_DETECTOR_VERSION_PATCH       0
+
+  #define ESP_DOUBLE_RESET_DETECTOR_VERSION_INT         1003000
+#endif
+
 #define ESP_DOUBLERESETDETECTOR_VERSION         ESP_DOUBLE_RESET_DETECTOR_VERSION
 
 //#define ESP_DRD_USE_EEPROM      false
@@ -81,10 +94,23 @@
 #ifdef ESP32
 
   #if ESP_DRD_USE_LITTLEFS
-    // The library will be depreciated after being merged to future major Arduino esp32 core release 2.x
-    // At that time, just remove this library inclusion
-    #include <LITTLEFS.h>             // https://github.com/lorol/LITTLEFS
-    #define FileFS   LITTLEFS
+    // Check cores/esp32/esp_arduino_version.h and cores/esp32/core_version.h
+    //#if ( ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0) )  //(ESP_ARDUINO_VERSION_MAJOR >= 2)
+    #if ( defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 2) )
+      #warning Using ESP32 Core 1.0.6 or 2.0.0+
+      // The library has been merged into esp32 core from release 1.0.6
+      #include <LittleFS.h>
+      
+      #define FileFS        LittleFS
+      #define FS_Name       "LittleFS"
+    #else
+      #warning Using ESP32 Core 1.0.5-. You must install LITTLEFS library
+      // The library has been merged into esp32 core from release 1.0.6
+      #include <LITTLEFS.h>             // https://github.com/lorol/LITTLEFS
+      
+      #define FileFS        LITTLEFS
+      #define FS_Name       "LittleFS"
+    #endif
   #else
     #include "SPIFFS.h"
     // ESP32 core 1.0.4 still uses SPIFFS

@@ -15,7 +15,8 @@
 
   Built by Khoi Hoang https://github.com/khoih-prog/ESP_WiFiManager
   Licensed under MIT license
-  Version: 1.3.0
+  
+  Version: 1.10.1
 
   Version Modified By   Date      Comments
   ------- -----------  ---------- -----------
@@ -37,39 +38,47 @@
   1.1.2   K Hoang      17/08/2020 Fix bug. Add example.
   1.2.0   K Hoang      09/10/2020 Restore cpp code besides Impl.h code to use if linker error. Fix bug.
   1.3.0   K Hoang      04/12/2020 Add LittleFS support to ESP32 using LITTLEFS Library
+  1.4.1   K Hoang      22/12/2020 Fix staticIP not saved. Add functions. Add complex examples. Sync with ESPAsync_WiFiManager
+  1.4.2   K Hoang      14/01/2021 Fix examples' bug not using saved WiFi Credentials after losing all WiFi connections.
+  1.4.3   K Hoang      23/01/2021 Fix examples' bug not saving Static IP in certain cases.
+  1.5.0   K Hoang      12/02/2021 Add support to new ESP32-S2
+  1.5.1   K Hoang      26/03/2021 Fix compiler error if setting Compiler Warnings to All. Retest with esp32 core v1.0.6
+  1.5.2   K Hoang      08/04/2021 Fix example misleading messages.
+  1.5.3   K Hoang      13/04/2021 Add dnsServer error message.
+  1.6.0   K Hoang      20/04/2021 Add support to new ESP32-C3 using SPIFFS or EEPROM
+  1.6.1   K Hoang      25/04/2021 Fix MultiWiFi bug. Fix captive-portal bug if CP AP address is not default 192.168.4.1
+  1.7.0   K Hoang      06/05/2021 Set _timezoneName. Add support to new ESP32-S2 (METRO_ESP32S2, FUNHOUSE_ESP32S2, etc.)
+  1.7.1   K Hoang      08/05/2021 Fix Json bug. Fix timezoneName not displayed in Info page.
+  1.7.2   K Hoang      08/05/2021 Fix warnings with ESP8266 core v3.0.0
+  1.7.3   K Hoang      29/07/2021 Fix MultiWiFi connection issue with ESP32 core v2.0.0-rc1+
+  1.7.4   K Hoang      13/08/2021 Add WiFi scanning of hidden SSIDs
+  1.7.5   K Hoang      10/10/2021 Update `platform.ini` and `library.json`
+  1.7.6   K Hoang      26/11/2021 Auto detect ESP32 core and use either built-in LittleFS or LITTLEFS library
+  1.7.7   K Hoang      26/11/2021 Fix compile error for ESP32 core v1.0.5-
+  1.7.8   K Hoang      30/11/2021 Fix bug to permit using HTTP port different from 80. Fix bug
+  1.8.0   K Hoang      29/12/2021 Fix `multiple-definitions` linker error and weird bug related to src_cpp
+  1.9.0   K Hoang      17/01/2022 Enable compatibility with old code to include only ESP_WiFiManager.h
+  1.10.0  K Hoang      10/02/2022 Add support to new ESP32-S3
+  1.10.1  K Hoang      11/02/2022 Add LittleFS support to ESP32-C3. Use core LittleFS instead of Lorol's LITTLEFS for v2.0.0+
  *****************************************************************************************************************************/
 
 #pragma once
 
-//#ifndef ESP_WiFiManager_Impl_h
-//#define ESP_WiFiManager_Impl_h
+#ifndef ESP_WiFiManager_Impl_h
+#define ESP_WiFiManager_Impl_h
 
 
 //////////////////////////////////////////
 
 ESP_WMParameter::ESP_WMParameter(const char *custom)
 {
-  _id = NULL;
-  _placeholder = NULL;
-  _length = 0;
-  _value = NULL;
-  _labelPlacement = WFM_LABEL_BEFORE;
+  _WMParam_data._id = NULL;
+  _WMParam_data._placeholder = NULL;
+  _WMParam_data._length = 0;
+  _WMParam_data._value = NULL;
+  _WMParam_data._labelPlacement = WFM_LABEL_BEFORE;
 
   _customHTML = custom;
-}
-
-//////////////////////////////////////////
-
-ESP_WMParameter::ESP_WMParameter(const char *id, const char *placeholder, const char *defaultValue, int length)
-{
-  init(id, placeholder, defaultValue, length, "", WFM_LABEL_BEFORE);
-}
-
-//////////////////////////////////////////
-
-ESP_WMParameter::ESP_WMParameter(const char *id, const char *placeholder, const char *defaultValue, int length, const char *custom)
-{
-  init(id, placeholder, defaultValue, length, custom, WFM_LABEL_BEFORE);
 }
 
 //////////////////////////////////////////
@@ -80,23 +89,30 @@ ESP_WMParameter::ESP_WMParameter(const char *id, const char *placeholder, const 
 }
 
 //////////////////////////////////////////
+// New in v1.4.0
+ESP_WMParameter::ESP_WMParameter(const WMParam_Data& WMParam_data)
+{
+  init(WMParam_data._id, WMParam_data._placeholder, WMParam_data._value, WMParam_data._length, "", WMParam_data._labelPlacement);
+}                  
+//////
+//////////////////////////////////////////
 
 void ESP_WMParameter::init(const char *id, const char *placeholder, const char *defaultValue, int length, const char *custom, int labelPlacement)
 {
-  _id = id;
-  _placeholder = placeholder;
-  _length = length;
-  _labelPlacement = labelPlacement;
+  _WMParam_data._id = id;
+  _WMParam_data._placeholder = placeholder;
+  _WMParam_data._length = length;
+  _WMParam_data._labelPlacement = labelPlacement;
 
-  _value = new char[_length + 1];
+  _WMParam_data._value = new char[_WMParam_data._length + 1];
 
-  if (_value != NULL)
+  if (_WMParam_data._value != NULL)
   {
-    memset(_value, 0, _length + 1);
+    memset(_WMParam_data._value, 0, _WMParam_data._length + 1);
 
     if (defaultValue != NULL)
     {
-      strncpy(_value, defaultValue, _length);
+      strncpy(_WMParam_data._value, defaultValue, _WMParam_data._length);
     }
   }
   
@@ -107,45 +123,65 @@ void ESP_WMParameter::init(const char *id, const char *placeholder, const char *
 
 ESP_WMParameter::~ESP_WMParameter()
 {
-  if (_value != NULL)
+  if (_WMParam_data._value != NULL)
   {
-    delete[] _value;
+    delete[] _WMParam_data._value;
   }
 }
+
+//////////////////////////////////////////
+// New in v1.4.0
+// Using Struct to get/set whole data at once
+void ESP_WMParameter::setWMParam_Data(const WMParam_Data& WMParam_data)
+{
+  LOGINFO(F("setWMParam_Data"));
+  
+  memcpy(&_WMParam_data, &WMParam_data, sizeof(_WMParam_data));
+}
+
+//////////////////////////////////////////
+
+void ESP_WMParameter::getWMParam_Data(WMParam_Data &WMParam_data)
+{
+  LOGINFO(F("getWMParam_Data"));
+  
+  memcpy(&WMParam_data, &_WMParam_data, sizeof(WMParam_data));
+}
+//////
 
 //////////////////////////////////////////
 
 const char* ESP_WMParameter::getValue()
 {
-  return _value;
+  return _WMParam_data._value;
 }
 
 //////////////////////////////////////////
 
 const char* ESP_WMParameter::getID()
 {
-  return _id;
+  return _WMParam_data._id;
 }
 
 //////////////////////////////////////////
 
 const char* ESP_WMParameter::getPlaceholder()
 {
-  return _placeholder;
+  return _WMParam_data._placeholder;
 }
 
 //////////////////////////////////////////
 
 int ESP_WMParameter::getValueLength()
 {
-  return _length;
+  return _WMParam_data._length;
 }
 
 //////////////////////////////////////////
 
 int ESP_WMParameter::getLabelPlacement()
 {
-  return _labelPlacement;
+  return _WMParam_data._labelPlacement;
 }
 
 //////////////////////////////////////////
@@ -329,16 +365,37 @@ void ESP_WiFiManager::setupConfigPortal()
   dnsServer.reset(new DNSServer());
 
 #ifdef ESP8266
-  server.reset(new ESP8266WebServer(80));
+  server.reset(new ESP8266WebServer(HTTP_PORT_TO_USE));
 #else		//ESP32
-  server.reset(new WebServer(80));
+  server.reset(new WebServer(HTTP_PORT_TO_USE));
 #endif
+
+  // optional soft ip config
+  // Must be put here before dns server start to take care of the non-default ConfigPortal AP IP.
+  // Check (https://github.com/khoih-prog/ESP_WiFiManager/issues/58)
+  if (_WiFi_AP_IPconfig._ap_static_ip)
+  {
+    LOGWARN3(F("Custom AP IP/GW/Subnet = "), _WiFi_AP_IPconfig._ap_static_ip, _WiFi_AP_IPconfig._ap_static_gw, _WiFi_AP_IPconfig._ap_static_sn);
+    
+    WiFi.softAPConfig(_WiFi_AP_IPconfig._ap_static_ip, _WiFi_AP_IPconfig._ap_static_gw, _WiFi_AP_IPconfig._ap_static_sn);
+  }
 
   /* Setup the DNS server redirecting all the domains to the apIP */
   if (dnsServer)
   {
     dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
-    dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
+    
+    // DNSServer started with "*" domain name, all DNS requests will be passsed to WiFi.softAPIP()
+    if (! dnsServer->start(DNS_PORT, "*", WiFi.softAPIP()))
+    {
+      // No socket available
+      LOGERROR(F("Can't start DNS Server. No available socket"));
+    }
+  }
+  else
+  {
+    // No space available
+    LOGERROR(F("Can't initiate DNS Server. No enough space"));
   }
 
   _configPortalStart = millis();
@@ -380,22 +437,7 @@ void ESP_WiFiManager::setupConfigPortal()
     WiFi.softAP(_apName);
   }
   //////
-  
-  // From v1.0.11
-  // Contributed by AlesSt (https://github.com/AlesSt) to solve issue softAP with custom IP sometimes not working
-  // See https://github.com/khoih-prog/ESP_WiFiManager/issues/26 and https://github.com/espressif/arduino-esp32/issues/985
-  // delay 100ms to wait for SYSTEM_EVENT_AP_START
-  delay(100);
-  //////
-  
-  //optional soft ip config
-  if (_ap_static_ip)
-  {
-    LOGWARN3(F("Custom AP IP/GW/Subnet = "), _ap_static_ip, _ap_static_gw, _ap_static_sn);
-    
-    WiFi.softAPConfig(_ap_static_ip, _ap_static_gw, _ap_static_sn);
-  }
-
+   
   delay(500); // Without delay I've seen the IP address blank
   
   LOGWARN1(F("AP IP address ="), WiFi.softAPIP());
@@ -417,7 +459,7 @@ void ESP_WiFiManager::setupConfigPortal()
 
 //////////////////////////////////////////
 
-boolean ESP_WiFiManager::autoConnect()
+bool ESP_WiFiManager::autoConnect()
 {
 #ifdef ESP8266
   String ssid = "ESP_" + String(ESP.getChipId());
@@ -443,7 +485,7 @@ boolean ESP_WiFiManager::autoConnect()
 
 //////////////////////////////////////////
 
-boolean ESP_WiFiManager::autoConnect(char const *apName, char const *apPassword)
+bool ESP_WiFiManager::autoConnect(char const *apName, char const *apPassword)
 {
 #if AUTOCONNECT_NO_INVALIDATE
   LOGINFO(F("\nAutoConnect using previously saved SSID/PW, but keep previous settings"));
@@ -478,7 +520,7 @@ boolean ESP_WiFiManager::autoConnect(char const *apName, char const *apPassword)
 
 //////////////////////////////////////////
 
-boolean  ESP_WiFiManager::startConfigPortal()
+bool  ESP_WiFiManager::startConfigPortal()
 {
 #ifdef ESP8266
   String ssid = "ESP_" + String(ESP.getChipId());
@@ -492,7 +534,7 @@ boolean  ESP_WiFiManager::startConfigPortal()
 
 //////////////////////////////////////////
 
-boolean  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPassword)
+bool  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPassword)
 {
   //setup AP
   int connRes = WiFi.waitForConnectResult();
@@ -532,7 +574,7 @@ boolean  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPa
 
   bool TimedOut = true;
 
-  LOGINFO("ESP_WiFiManager::startConfigPortal : Enter loop");
+  LOGINFO("startConfigPortal : Enter loop");
 
   while (_configPortalTimeout == 0 || millis() < _configPortalStart + _configPortalTimeout)
   {
@@ -540,6 +582,11 @@ boolean  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPa
     dnsServer->processNextRequest();
     //HTTP
     server->handleClient();
+  
+#if ( USING_ESP32_S2 || USING_ESP32_C3 ) 
+    // Fix ESP32-S2 issue with WebServer (https://github.com/espressif/arduino-esp32/issues/4348)
+    delay(1);
+#endif
 
     if (connect)
     {
@@ -547,28 +594,6 @@ boolean  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPa
       delay(2000);
 
       LOGERROR(F("Connecting to new AP"));
-
-#if 0
-
-      // New Mod from v1.1.0
-      int wifiConnected = reconnectWifi();
-          
-      if ( wifiConnected == WL_CONNECTED )
-      {
-        //notify that configuration has changed and any optional parameters should be saved
-        if (_savecallback != NULL)
-        {
-          //todo: check if any custom parameters actually exist, and check if they really changed maybe
-          _savecallback();
-        }
-        
-        break;
-      }
-      
-      WiFi.mode(WIFI_AP); // Dual mode becomes flaky if not connected to a WiFi network.
-      //////
-
-#else
 
       // using user-provided  _ssid, _pass in place of system-stored ssid and pass
       if (connectWifi(_ssid, _pass) != WL_CONNECTED)
@@ -587,8 +612,6 @@ boolean  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPa
         }
         break;
       }
-
-#endif
 
       if (_shouldBreakAfterConfig)
       {
@@ -640,31 +663,31 @@ boolean  ESP_WiFiManager::startConfigPortal(char const *apName, char const *apPa
 
 //////////////////////////////////////////
 
-void ESP_WiFiManager::setWifiStaticIP(void)
+void ESP_WiFiManager::setWifiStaticIP()
 { 
 #if USE_CONFIGURABLE_DNS
-  if (_sta_static_ip)
+  if (_WiFi_STA_IPconfig._sta_static_ip)
   {
     LOGWARN(F("Custom STA IP/GW/Subnet"));
    
     //***** Added section for DNS config option *****
-    if (_sta_static_dns1 && _sta_static_dns2) 
+    if (_WiFi_STA_IPconfig._sta_static_dns1 && _WiFi_STA_IPconfig._sta_static_dns2) 
     { 
       LOGWARN(F("DNS1 and DNS2 set"));
  
-      WiFi.config(_sta_static_ip, _sta_static_gw, _sta_static_sn, _sta_static_dns1, _sta_static_dns2);
+      WiFi.config(_WiFi_STA_IPconfig._sta_static_ip, _WiFi_STA_IPconfig._sta_static_gw, _WiFi_STA_IPconfig._sta_static_sn, _WiFi_STA_IPconfig._sta_static_dns1, _WiFi_STA_IPconfig._sta_static_dns2);
     }
-    else if (_sta_static_dns1) 
+    else if (_WiFi_STA_IPconfig._sta_static_dns1) 
     {
       LOGWARN(F("Only DNS1 set"));
      
-      WiFi.config(_sta_static_ip, _sta_static_gw, _sta_static_sn, _sta_static_dns1);
+      WiFi.config(_WiFi_STA_IPconfig._sta_static_ip, _WiFi_STA_IPconfig._sta_static_gw, _WiFi_STA_IPconfig._sta_static_sn, _WiFi_STA_IPconfig._sta_static_dns1);
     }
     else 
     {
       LOGWARN(F("No DNS server set"));
   
-      WiFi.config(_sta_static_ip, _sta_static_gw, _sta_static_sn);
+      WiFi.config(_WiFi_STA_IPconfig._sta_static_ip, _WiFi_STA_IPconfig._sta_static_gw, _WiFi_STA_IPconfig._sta_static_sn);
     }
     //***** End added section for DNS config option *****
 
@@ -676,9 +699,9 @@ void ESP_WiFiManager::setWifiStaticIP(void)
   }
 #else
   // check if we've got static_ip settings, if we do, use those.
-  if (_sta_static_ip)
+  if (_WiFi_STA_IPconfig._sta_static_ip)
   {
-    WiFi.config(_sta_static_ip, _sta_static_gw, _sta_static_sn);
+    WiFi.config(_WiFi_STA_IPconfig._sta_static_ip, _WiFi_STA_IPconfig._sta_static_gw, _WiFi_STA_IPconfig._sta_static_sn);
     
     LOGWARN1(F("Custom STA IP/GW/Subnet : "), WiFi.localIP());
   }
@@ -688,7 +711,7 @@ void ESP_WiFiManager::setWifiStaticIP(void)
 //////////////////////////////////////////
 
 // New from v1.1.0
-int ESP_WiFiManager::reconnectWifi(void)
+int ESP_WiFiManager::reconnectWifi()
 {
   int connectResult;
   
@@ -713,7 +736,7 @@ int ESP_WiFiManager::reconnectWifi(void)
 
 //////////////////////////////////////////
 
-int ESP_WiFiManager::connectWifi(String ssid, String pass)
+int ESP_WiFiManager::connectWifi(const String& ssid, const String& pass)
 {
   //KH, from v1.0.10.
   // Add option if didn't input/update SSID/PW => Use the previous saved Credentials.
@@ -804,7 +827,7 @@ uint8_t ESP_WiFiManager::waitForConnectResult()
   {
     LOGERROR(F("Waiting WiFi connection with time out"));
     unsigned long start = millis();
-    boolean keepConnecting = true;
+    bool keepConnecting = true;
     uint8_t status;
 
     while (keepConnecting)
@@ -921,7 +944,7 @@ void ESP_WiFiManager::setConnectTimeout(unsigned long seconds)
 
 //////////////////////////////////////////
 
-void ESP_WiFiManager::setDebugOutput(boolean debug)
+void ESP_WiFiManager::setDebugOutput(bool debug)
 {
   _debug = debug;
 }
@@ -944,35 +967,74 @@ int ESP_WiFiManager::setConfigPortalChannel(int channel)
 
 //////////////////////////////////////////
 
-void ESP_WiFiManager::setAPStaticIPConfig(IPAddress ip, IPAddress gw, IPAddress sn)
+void ESP_WiFiManager::setAPStaticIPConfig(const IPAddress& ip, const IPAddress& gw, const IPAddress& sn)
 {
   LOGINFO(F("setAPStaticIPConfig"));
-  _ap_static_ip = ip;
-  _ap_static_gw = gw;
-  _ap_static_sn = sn;
+  _WiFi_AP_IPconfig._ap_static_ip = ip;
+  _WiFi_AP_IPconfig._ap_static_gw = gw;
+  _WiFi_AP_IPconfig._ap_static_sn = sn;
 }
 
 //////////////////////////////////////////
 
-void ESP_WiFiManager::setSTAStaticIPConfig(IPAddress ip, IPAddress gw, IPAddress sn)
+// New in v1.4.0
+void ESP_WiFiManager::setAPStaticIPConfig(const WiFi_AP_IPConfig&  WM_AP_IPconfig)
 {
-  LOGINFO(F("setSTAStaticIPConfig"));
-  _sta_static_ip = ip;
-  _sta_static_gw = gw;
-  _sta_static_sn = sn;
+  LOGINFO(F("setAPStaticIPConfig"));
+  
+  memcpy((void*) &_WiFi_AP_IPconfig, &WM_AP_IPconfig, sizeof(_WiFi_AP_IPconfig));
 }
 
+//////////////////////////////////////////
+
+void ESP_WiFiManager::getAPStaticIPConfig(WiFi_AP_IPConfig  &WM_AP_IPconfig)
+{
+  LOGINFO(F("getAPStaticIPConfig"));
+  
+  memcpy((void*) &WM_AP_IPconfig, &_WiFi_AP_IPconfig, sizeof(WM_AP_IPconfig));
+}
+//////
+//////////////////////////////////////////
+
+void ESP_WiFiManager::setSTAStaticIPConfig(const IPAddress& ip, const IPAddress& gw, const IPAddress& sn)
+{
+  LOGINFO(F("setSTAStaticIPConfig"));
+  _WiFi_STA_IPconfig._sta_static_ip = ip;
+  _WiFi_STA_IPconfig._sta_static_gw = gw;
+  _WiFi_STA_IPconfig._sta_static_sn = sn;
+}
+
+//////////////////////////////////////////
+// New in v1.4.0
+
+void ESP_WiFiManager::setSTAStaticIPConfig(const WiFi_STA_IPConfig& WM_STA_IPconfig)
+{
+  LOGINFO(F("setSTAStaticIPConfig"));
+  
+  memcpy((void*) &_WiFi_STA_IPconfig, &WM_STA_IPconfig, sizeof(_WiFi_STA_IPconfig));
+}
+
+//////////////////////////////////////////
+
+void ESP_WiFiManager::getSTAStaticIPConfig(WiFi_STA_IPConfig &WM_STA_IPconfig)
+{
+  LOGINFO(F("getSTAStaticIPConfig"));
+  
+  memcpy((void*) &WM_STA_IPconfig, &_WiFi_STA_IPconfig, sizeof(WM_STA_IPconfig));
+}
+//////
 //////////////////////////////////////////
 
 #if USE_CONFIGURABLE_DNS
-void ESP_WiFiManager::setSTAStaticIPConfig(IPAddress ip, IPAddress gw, IPAddress sn, IPAddress dns_address_1, IPAddress dns_address_2)
+void ESP_WiFiManager::setSTAStaticIPConfig(const IPAddress& ip, const IPAddress& gw, const IPAddress& sn, 
+                                           const IPAddress& dns_address_1, const IPAddress& dns_address_2)
 {
   LOGINFO(F("setSTAStaticIPConfig for USE_CONFIGURABLE_DNS"));
-  _sta_static_ip = ip;
-  _sta_static_gw = gw;
-  _sta_static_sn = sn;
-  _sta_static_dns1 = dns_address_1; //***** Added argument *****
-  _sta_static_dns2 = dns_address_2; //***** Added argument *****
+  _WiFi_STA_IPconfig._sta_static_ip = ip;
+  _WiFi_STA_IPconfig._sta_static_gw = gw;
+  _WiFi_STA_IPconfig._sta_static_sn = sn;
+  _WiFi_STA_IPconfig._sta_static_dns1 = dns_address_1; //***** Added argument *****
+  _WiFi_STA_IPconfig._sta_static_dns2 = dns_address_2; //***** Added argument *****
 }
 #endif
 
@@ -985,7 +1047,7 @@ void ESP_WiFiManager::setMinimumSignalQuality(int quality)
 
 //////////////////////////////////////////
 
-void ESP_WiFiManager::setBreakAfterConfig(boolean shouldBreak)
+void ESP_WiFiManager::setBreakAfterConfig(bool shouldBreak)
 {
   _shouldBreakAfterConfig = shouldBreak;
 }
@@ -1119,7 +1181,7 @@ void ESP_WiFiManager::handleWifi()
   //Print list of WiFi networks that were found in earlier scan
   if (numberOfNetworks == 0)
   {
-    page += F("WiFi scan found no networks. Restart configuration portal to scan again.");
+    page += F("No network found. Refresh to scan again.");
   }
   else
   {
@@ -1173,6 +1235,8 @@ void ESP_WiFiManager::handleWifi()
   page += FPSTR(WM_HTTP_FORM_START);
   char parLength[2];
   
+  page += FPSTR(WM_FLDSET_START);
+  
   // add the extra parameters to the form
   for (int i = 0; i < _paramsCount; i++)
   {
@@ -1181,13 +1245,6 @@ void ESP_WiFiManager::handleWifi()
       break;
     }
     
-    // From v1.0.10
-    if (i == 1)
-    {
-      page += FPSTR(WM_FLDSET_START);
-    }
-    //////
-
     String pitem;
     switch (_params[i]->getLabelPlacement())
     {
@@ -1233,7 +1290,7 @@ void ESP_WiFiManager::handleWifi()
     page += "<br/>";
   }
 
-  LOGDEBUG1(F("Static IP ="), _sta_static_ip.toString());
+  LOGDEBUG1(F("Static IP ="), _WiFi_STA_IPconfig._sta_static_ip.toString());
   
   // KH, Comment out in v1.0.9 to permit changing from DHCP to static IP, or vice versa
   // and add staticIP label in CP
@@ -1243,7 +1300,7 @@ void ESP_WiFiManager::handleWifi()
   // You have to explicitly specify false to disable the feature.
 
 #if !USE_STATIC_IP_CONFIG_IN_CP
-  if (_sta_static_ip)
+  if (_WiFi_STA_IPconfig._sta_static_ip)
 #endif  
   {
     // From v1.0.10
@@ -1256,7 +1313,7 @@ void ESP_WiFiManager::handleWifi()
     item.replace("{n}", "ip");
     item.replace("{p}", "Static IP");
     item.replace("{l}", "15");
-    item.replace("{v}", _sta_static_ip.toString());
+    item.replace("{v}", _WiFi_STA_IPconfig._sta_static_ip.toString());
 
     page += item;
 
@@ -1266,7 +1323,7 @@ void ESP_WiFiManager::handleWifi()
     item.replace("{n}", "gw");
     item.replace("{p}", "Gateway IP");
     item.replace("{l}", "15");
-    item.replace("{v}", _sta_static_gw.toString());
+    item.replace("{v}", _WiFi_STA_IPconfig._sta_static_gw.toString());
 
     page += item;
 
@@ -1276,7 +1333,7 @@ void ESP_WiFiManager::handleWifi()
     item.replace("{n}", "sn");
     item.replace("{p}", "Subnet");
     item.replace("{l}", "15");
-    item.replace("{v}", _sta_static_sn.toString());
+    item.replace("{v}", _WiFi_STA_IPconfig._sta_static_sn.toString());
 
   #if USE_CONFIGURABLE_DNS
     //***** Added for DNS address options *****
@@ -1288,7 +1345,7 @@ void ESP_WiFiManager::handleWifi()
     item.replace("{n}", "dns1");
     item.replace("{p}", "DNS1 IP");
     item.replace("{l}", "15");
-    item.replace("{v}", _sta_static_dns1.toString());
+    item.replace("{v}", _WiFi_STA_IPconfig._sta_static_dns1.toString());
 
     page += item;
 
@@ -1298,7 +1355,7 @@ void ESP_WiFiManager::handleWifi()
     item.replace("{n}", "dns2");
     item.replace("{p}", "DNS2 IP");
     item.replace("{l}", "15");
-    item.replace("{v}", _sta_static_dns2.toString());
+    item.replace("{v}", _WiFi_STA_IPconfig._sta_static_dns2.toString());
     //***** End added for DNS address options *****
   #endif
 
@@ -1310,6 +1367,8 @@ void ESP_WiFiManager::handleWifi()
 
     page += "<br/>";
   }
+  
+  page += FPSTR(WM_HTTP_SCRIPT_NTP_HIDDEN);
 
   page += FPSTR(WM_HTTP_FORM_END);
 
@@ -1334,7 +1393,23 @@ void ESP_WiFiManager::handleWifiSave()
   // New from v1.1.0
   _ssid1 = server->arg("s1").c_str();
   _pass1 = server->arg("p1").c_str();
-  //////
+  
+  ///////////////////////
+
+#if USE_ESP_WIFIMANAGER_NTP 
+  
+  if (server->arg("timezone") != "")
+  { 
+    _timezoneName = server->arg("timezone");
+    LOGDEBUG1(F("TZ name ="), _timezoneName);
+  }
+  else
+  {
+    LOGDEBUG(F("No TZ arg"));
+  }
+
+#endif
+  ///////////////////////
   
   //parameters
   for (int i = 0; i < _paramsCount; i++)
@@ -1346,8 +1421,11 @@ void ESP_WiFiManager::handleWifiSave()
 
     //read parameter
     String value = server->arg(_params[i]->getID()).c_str();
+    
     //store it in array
-    value.toCharArray(_params[i]->_value, _params[i]->_length);
+    // New in v1.4.0
+    value.toCharArray(_params[i]->_WMParam_data._value, _params[i]->_WMParam_data._length);
+    //////
     
     LOGDEBUG2(F("Parameter and value :"), _params[i]->getID(), value);
   }
@@ -1355,25 +1433,25 @@ void ESP_WiFiManager::handleWifiSave()
   if (server->arg("ip") != "")
   {
     String ip = server->arg("ip");
-    optionalIPFromString(&_sta_static_ip, ip.c_str());
+    optionalIPFromString(&_WiFi_STA_IPconfig._sta_static_ip, ip.c_str());
     
-    LOGDEBUG1(F("New Static IP ="), _sta_static_ip.toString());
+    LOGDEBUG1(F("New Static IP ="), _WiFi_STA_IPconfig._sta_static_ip.toString());
   }
 
   if (server->arg("gw") != "")
   {
     String gw = server->arg("gw");
-    optionalIPFromString(&_sta_static_gw, gw.c_str());
+    optionalIPFromString(&_WiFi_STA_IPconfig._sta_static_gw, gw.c_str());
     
-    LOGDEBUG1(F("New Static Gateway ="), _sta_static_gw.toString());
+    LOGDEBUG1(F("New Static Gateway ="), _WiFi_STA_IPconfig._sta_static_gw.toString());
   }
 
   if (server->arg("sn") != "")
   {
     String sn = server->arg("sn");
-    optionalIPFromString(&_sta_static_sn, sn.c_str());
+    optionalIPFromString(&_WiFi_STA_IPconfig._sta_static_sn, sn.c_str());
     
-    LOGDEBUG1(F("New Static Netmask ="), _sta_static_sn.toString());
+    LOGDEBUG1(F("New Static Netmask ="), _WiFi_STA_IPconfig._sta_static_sn.toString());
   }
 
 #if USE_CONFIGURABLE_DNS
@@ -1381,17 +1459,17 @@ void ESP_WiFiManager::handleWifiSave()
   if (server->arg("dns1") != "")
   {
     String dns1 = server->arg("dns1");
-    optionalIPFromString(&_sta_static_dns1, dns1.c_str());
+    optionalIPFromString(&_WiFi_STA_IPconfig._sta_static_dns1, dns1.c_str());
     
-    LOGDEBUG1(F("New Static DNS1 ="), _sta_static_dns1.toString());
+    LOGDEBUG1(F("New Static DNS1 ="), _WiFi_STA_IPconfig._sta_static_dns1.toString());
   }
 
   if (server->arg("dns2") != "")
   {
     String dns2 = server->arg("dns2");
-    optionalIPFromString(&_sta_static_dns2, dns2.c_str());
+    optionalIPFromString(&_WiFi_STA_IPconfig._sta_static_dns2, dns2.c_str());
     
-    LOGDEBUG1(F("New Static DNS2 ="), _sta_static_dns2.toString());
+    LOGDEBUG1(F("New Static DNS2 ="), _WiFi_STA_IPconfig._sta_static_dns2.toString());
   }
   //*****  End added for DNS Options *****
 #endif
@@ -1400,7 +1478,6 @@ void ESP_WiFiManager::handleWifiSave()
   
   page.replace("{v}", "Credentials Saved");
   page += FPSTR(WM_HTTP_SCRIPT);
-  page += FPSTR(WM_HTTP_SCRIPT_NTP);
   page += FPSTR(WM_HTTP_STYLE);
   page += _customHeadElement;
   page += FPSTR(WM_HTTP_HEAD_END);
@@ -1445,7 +1522,6 @@ void ESP_WiFiManager::handleServerClose()
   
   page.replace("{v}", "Close Server");
   page += FPSTR(WM_HTTP_SCRIPT);
-  page += FPSTR(WM_HTTP_SCRIPT_NTP);
   page += FPSTR(WM_HTTP_STYLE);
   page += _customHeadElement;
   page += FPSTR(WM_HTTP_HEAD_END);
@@ -1457,9 +1533,13 @@ void ESP_WiFiManager::handleServerClose()
   page += WiFi.localIP().toString();
   page += F("</b><br><br>");
   page += F("Portal closed...<br><br>");
+  
   //page += F("Push button on device to restart configuration server!");
+  
   page += FPSTR(WM_HTTP_END);
+  
   server->send(200, "text/html", page);
+  
   stopConfigPortal = true; //signal ready to shutdown config portal
   
   LOGDEBUG(F("Sent server close page"));
@@ -1496,8 +1576,13 @@ void ESP_WiFiManager::handleInfo()
   page += FPSTR(WM_HTTP_STYLE);
   page += _customHeadElement;
   page += FPSTR(WM_HTTP_HEAD_END);
+  
   page += F("<h2>WiFi Information</h2>");
+  
   reportStatus(page);
+  
+  page += FPSTR(WM_FLDSET_START);
+  
   page += F("<h3>Device Data</h3>");
   page += F("<table class=\"table\">");
   page += F("<thead><tr><th>Name</th><th>Value</th></tr></thead><tbody><tr><td>Chip ID</td><td>");
@@ -1552,7 +1637,15 @@ void ESP_WiFiManager::handleInfo()
   page += F("</td></tr>");
   page += F("</tbody></table>");
 
+  page += FPSTR(WM_FLDSET_END);
+  
+#if USE_AVAILABLE_PAGES  
+  page += FPSTR(WM_FLDSET_START);
+  
   page += FPSTR(WM_HTTP_AVAILABLE_PAGES);
+  
+  page += FPSTR(WM_FLDSET_END);
+#endif
 
   page += F("<p/>More information about ESP_WiFiManager at");
   page += F("<p/><a href=\"https://github.com/khoih-prog/ESP_WiFiManager\">https://github.com/khoih-prog/ESP_WiFiManager</a>");
@@ -1603,6 +1696,7 @@ void ESP_WiFiManager::handleState()
   page += F("\"SSID\":\"");
   page += WiFi_SSID();
   page += F("\"}");
+  
   server->send(200, "application/json", page);
   
   LOGDEBUG(F("Sent state page in json format"));
@@ -1705,7 +1799,6 @@ void ESP_WiFiManager::handleReset()
   
   page.replace("{v}", "WiFi Information");
   page += FPSTR(WM_HTTP_SCRIPT);
-  page += FPSTR(WM_HTTP_SCRIPT_NTP);
   page += FPSTR(WM_HTTP_STYLE);
   page += _customHeadElement;
   page += FPSTR(WM_HTTP_HEAD_END);
@@ -1772,11 +1865,13 @@ void ESP_WiFiManager::handleNotFound()
    Redirect to captive portal if we got a request for another domain.
    Return true in that case so the page handler do not try to handle the request again.
 */
-boolean ESP_WiFiManager::captivePortal()
+bool ESP_WiFiManager::captivePortal()
 {
+  LOGDEBUG1(F("captivePortal: hostHeader = "), server->hostHeader());
+  
   if (!isIp(server->hostHeader()))
   {
-    LOGDEBUG(F("Request redirected to captive portal"));
+    LOGINFO1(F("Request redirected to captive portal : "), server->client().localIP());
     
     server->sendHeader(F("Location"), (String)F("http://") + toStringIp(server->client().localIP()), true);
     server->send(302, FPSTR(WM_HTTP_HEAD_CT2), ""); // Empty content inhibits Content-length header so we have to close the socket ourselves.
@@ -1798,7 +1893,7 @@ void ESP_WiFiManager::setAPCallback(void(*func)(ESP_WiFiManager* myWiFiManager))
 //////////////////////////////////////////
 
 //start up save config callback
-void ESP_WiFiManager::setSaveConfigCallback(void(*func)(void))
+void ESP_WiFiManager::setSaveConfigCallback(void(*func)())
 {
   _savecallback = func;
 }
@@ -1811,7 +1906,7 @@ void ESP_WiFiManager::setCustomHeadElement(const char* element) {
 }
 
 //if this is true, remove duplicated Access Points - defaut true
-void ESP_WiFiManager::setRemoveDuplicateAPs(boolean removeDuplicates)
+void ESP_WiFiManager::setRemoveDuplicateAPs(bool removeDuplicates)
 {
   _removeDuplicateAPs = removeDuplicates;
 }
@@ -1824,7 +1919,7 @@ int ESP_WiFiManager::scanWifiNetworks(int **indicesptr)
 {
   LOGDEBUG(F("Scanning Network"));
 
-  int n = WiFi.scanNetworks();
+  int n = WiFi.scanNetworks(false, true);
 
   LOGDEBUG1(F("scanWifiNetworks: Done, Scanned Networks n ="), n); 
 
@@ -1950,13 +2045,13 @@ int ESP_WiFiManager::getRSSIasQuality(int RSSI)
 //////////////////////////////////////////
 
 /** Is this an IP? */
-boolean ESP_WiFiManager::isIp(String str)
+bool ESP_WiFiManager::isIp(const String& str)
 {
-  for (int i = 0; i < str.length(); i++)
+  for (unsigned int i = 0; i < str.length(); i++)
   {
     int c = str.charAt(i);
 
-    if (c != '.' && (c < '0' || c > '9'))
+    if (c != '.' && c != ':' && (c < '0' || c > '9'))
     {
       return false;
     }
@@ -1967,7 +2062,7 @@ boolean ESP_WiFiManager::isIp(String str)
 //////////////////////////////////////////
 
 /** IP to String? */
-String ESP_WiFiManager::toStringIp(IPAddress ip)
+String ESP_WiFiManager::toStringIp(const IPAddress& ip)
 {
   String res = "";
   for (int i = 0; i < 3; i++)
@@ -2027,4 +2122,4 @@ String ESP_WiFiManager::getStoredWiFiPass()
 #endif
 
 
-//#endif    //ESP_WiFiManager_Impl_h
+#endif    //ESP_WiFiManager_Impl_h

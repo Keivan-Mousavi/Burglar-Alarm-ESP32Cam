@@ -34,8 +34,9 @@ void EasyDDNSClass::update(unsigned long ddns_update_interval, bool use_local_ip
         String(ipAddress[3]);
     } else {
       // ######## GET PUBLIC IP ######## //
+      WiFiClient client;
       HTTPClient http;
-      http.begin("http://ipv4bot.whatismyipaddress.com/");
+      http.begin(client, "http://ifconfig.me/ip");
       int httpCode = http.GET();
       if (httpCode > 0) {
         if (httpCode == HTTP_CODE_OK) {
@@ -71,6 +72,8 @@ void EasyDDNSClass::update(unsigned long ddns_update_interval, bool use_local_ip
       update_url = "http://freemyip.com/update?domain=" + ddns_d + "&token=" + ddns_u + "&myip=" + new_ip + "";
     } else if (ddns_choice == "afraid.org") {
       update_url = "http://sync.afraid.org/u/" + ddns_u + "/";
+    } else if (ddns_choice == "ovh") {
+      update_url = "http://" + ddns_u + ":" + ddns_p + "@www.ovh.com/nic/update?system=dyndns&hostname=" + ddns_d + "&myip=" + new_ip + "";
     } else {
       Serial.println("## INPUT CORRECT DDNS SERVICE NAME ##");
       return;
@@ -78,9 +81,9 @@ void EasyDDNSClass::update(unsigned long ddns_update_interval, bool use_local_ip
 
     // ######## CHECK & UPDATE ######### //
     if (old_ip != new_ip) {
-
+      WiFiClient client;
       HTTPClient http;
-      http.begin(update_url);
+      http.begin(client, update_url);
       int httpCode = http.GET();
       if (httpCode == 200) {
         // Send a callback notification

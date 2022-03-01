@@ -17,12 +17,13 @@ namespace Eloquent {
                  * @param file
                  * @param image
                  */
-                bool writeGrayscale(File& file, uint8_t *image, uint8_t quality = 10) {
+                bool writeGrayscale(File& file, uint8_t *image, uint8_t quality = 30) {
                     uint8_t *jpeg;
                     size_t len;
 
                     if (fmt2jpg(image, width * height, width, height, PIXFORMAT_GRAYSCALE, quality, &jpeg, &len)) {
                         file.write(jpeg, len);
+                        free(jpeg);
 
                         return true;
                     }
