@@ -12,7 +12,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "c:/Users/Keivan/Documents/PlatformIO/Projects/Burglar Alarm ESP32Cam/.pio/build/esp-wrover-kit/firmware.elf",
+            "executable": "e:/Project/Burglar-Alarm-ESP32Cam/.pio/build/esp-wrover-kit/firmware.elf",
             "projectEnvName": "esp-wrover-kit",
             "toolchainBinDir": "C:/Users/Keivan/.platformio/packages/toolchain-xtensa32/bin",
             "internalConsoleOptions": "openOnSessionStart",
@@ -25,10 +25,20 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "c:/Users/Keivan/Documents/PlatformIO/Projects/Burglar Alarm ESP32Cam/.pio/build/esp-wrover-kit/firmware.elf",
+            "executable": "e:/Project/Burglar-Alarm-ESP32Cam/.pio/build/esp-wrover-kit/firmware.elf",
             "projectEnvName": "esp-wrover-kit",
             "toolchainBinDir": "C:/Users/Keivan/.platformio/packages/toolchain-xtensa32/bin",
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "type": "platformio-debug",
+            "request": "launch",
+            "name": "PIO Debug (without uploading)",
+            "executable": "e:/Project/Burglar-Alarm-ESP32Cam/.pio/build/esp-wrover-kit/firmware.elf",
+            "projectEnvName": "esp-wrover-kit",
+            "toolchainBinDir": "C:/Users/Keivan/.platformio/packages/toolchain-xtensa32/bin",
+            "internalConsoleOptions": "openOnSessionStart",
+            "loadMode": "manual"
         }
     ]
 }
