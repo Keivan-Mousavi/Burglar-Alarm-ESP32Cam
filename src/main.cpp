@@ -224,7 +224,11 @@ bool CheckUploadImage()
 
   if (httpCode > 0)
   {
-    return (bool)http.getString();
+    bool flag = (bool)http.getString();
+    
+    http.end();
+
+    return flag;
   }
 }
 
