@@ -19,10 +19,8 @@
 const char *ssid = "***";
 const char *password = "***";
 
-String serverName = "burglaralarm.persianprogrammer.com";
-
-String serverPath = "/ManageNotification/UploadImage";
-
+const String serverName = "burglaralarm.persianprogrammer.com";
+const String serverPath = "/ManageNotification/UploadImage";
 const int serverPort = 80;
 
 WiFiClient client;
